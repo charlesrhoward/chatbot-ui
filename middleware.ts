@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
     }
 
     return response
-  } catch (e) {
+  } catch (e: unknown) {
     return NextResponse.next({
       request: {
         headers: request.headers
