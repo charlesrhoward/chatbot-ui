@@ -97,7 +97,14 @@ export default function SetupPage() {
         }
       }
     })()
-  }, [])
+  }, [
+    router,
+    setProfile,
+    setUsername,
+    setEnvKeyMap,
+    setAvailableHostedModels,
+    setAvailableOpenRouterModels
+  ])
 
   const handleShouldProceed = (proceed: boolean) => {
     if (proceed) {

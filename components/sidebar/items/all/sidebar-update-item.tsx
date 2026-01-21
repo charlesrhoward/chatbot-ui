@@ -168,7 +168,8 @@ export const SidebarUpdateItem: FC<SidebarUpdateItemProps> = ({
 
       fetchData()
     }
-  }, [isOpen])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, workspaces.length, item.id, contentType])
 
   const renderState = {
     chats: null,
