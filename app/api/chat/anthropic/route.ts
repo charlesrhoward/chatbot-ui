@@ -3,7 +3,6 @@ import { checkApiKey, getServerProfile } from "@/lib/server/server-chat-helpers"
 import { getBase64FromDataURL, getMediaTypeFromDataURL } from "@/lib/utils"
 import { ChatSettings } from "@/types"
 import Anthropic from "@anthropic-ai/sdk"
-import { AnthropicStream, StreamingTextResponse } from "ai"
 import { NextRequest, NextResponse } from "next/server"
 
 export const runtime = "edge"
@@ -71,8 +70,23 @@ export async function POST(request: NextRequest) {
       })
 
       try {
-        const stream = AnthropicStream(response)
-        return new StreamingTextResponse(stream)
+        const encoder = new TextEncoder()
+        const stream = new ReadableStream({
+          async start(controller) {
+            for await (const event of response) {
+              if (
+                event.type === "content_block_delta" &&
+                event.delta.type === "text_delta"
+              ) {
+                controller.enqueue(encoder.encode(event.delta.text))
+              }
+            }
+            controller.close()
+          }
+        })
+        return new Response(stream, {
+          headers: { "Content-Type": "text/plain; charset=utf-8" }
+        })
       } catch (error: any) {
         console.error("Error parsing Anthropic API response:", error)
         return new NextResponse(

@@ -1,7 +1,6 @@
 import { CHAT_SETTING_LIMITS } from "@/lib/chat-setting-limits"
 import { checkApiKey, getServerProfile } from "@/lib/server/server-chat-helpers"
 import { ChatSettings } from "@/types"
-import { OpenAIStream, StreamingTextResponse } from "ai"
 import OpenAI from "openai"
 
 export const runtime = "edge"
@@ -32,11 +31,22 @@ export async function POST(request: Request) {
       stream: true
     })
 
-    // Convert the response into a friendly text-stream.
-    const stream = OpenAIStream(response)
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of response) {
+          const content = chunk.choices[0]?.delta?.content
+          if (content) {
+            controller.enqueue(encoder.encode(content))
+          }
+        }
+        controller.close()
+      }
+    })
 
-    // Respond with the stream
-    return new StreamingTextResponse(stream)
+    return new Response(stream, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" }
+    })
   } catch (error: any) {
     let errorMessage = error.message || "An unexpected error occurred"
     const errorCode = error.status || 500
